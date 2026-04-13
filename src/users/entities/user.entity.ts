@@ -1,5 +1,8 @@
-export class User {
-  declare id: number;
-  declare name: string;
-  email?: string;
+import { Prisma } from '@prisma/client';
+
+export class User implements Prisma.UserUncheckedCreateInput {
+  id?: number;
+  email!: string;
+  name!: string;
+  posts?: Prisma.PostUncheckedCreateNestedManyWithoutAuthorInput;
 }

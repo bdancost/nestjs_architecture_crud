@@ -1,78 +1,56 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { Injectable, NotFoundException } from '@nestjs/common';
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/require-await */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { Prisma, User } from '@prisma/client';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { User } from './entities/user.entity';
-import { EntityNotFoundError } from 'src/errors/entity-not-found.error';
 
 @Injectable()
 export class UsersService {
-  private users: User[] = [
-    {
-      id: 1,
-      name: 'John Doe',
-      email: 'john.doe@example.com',
-    },
-  ];
+  constructor(private prisma: PrismaService) {}
 
-  create(createUserDto: CreateUserDto) {
-    const currentMaxId = this.users[this.users.length - 1]?.id || 0;
+  async findOne(id: number): Promise<User | null> {
+    return this.prisma.user.findUnique({
+      where: { id },
+    });
+  }
 
-    const id = currentMaxId + 1;
+  async findAll(): Promise<User[]> {
+    return this.prisma.user.findMany();
+  }
 
-    const { id: _dtoId, ...dto } = createUserDto;
+  async create(dto: CreateUserDto): Promise<User> {
+    if (dto.email === undefined) {
+      throw new Error('email is required');
+    }
 
-    const user: User = {
-      id,
+    const data: Prisma.UserCreateInput = {
+      name: dto.name,
+      email: dto.email,
+    };
+
+    return this.prisma.user.create({
+      data,
+    });
+  }
+
+  async update(id: number, dto: UpdateUserDto): Promise<User> {
+    const data: Prisma.UserUpdateInput = {
       ...dto,
     };
 
-    this.users.push(user);
-    return user;
+    return this.prisma.user.update({
+      data,
+      where: { id },
+    });
   }
 
-  findAll() {
-    return this.users;
-  }
-
-  findOne(id: number) {
-    const user = this.users.find((user: User) => user.id === id);
-
-    if (!user) {
-      throw new EntityNotFoundError('User', id);
-    }
-
-    return user;
-  }
-
-  update(id: number, updateUserDto: UpdateUserDto) {
-    const user = this.findOne(id);
-
-    if (!user) {
-      throw new NotFoundException(`User with id ${id} not found`);
-    }
-
-    const newUser: User = {
-      ...user,
-      ...updateUserDto,
-    };
-
-    const index = this.users.indexOf(user);
-
-    this.users[index] = newUser;
-
-    return newUser;
-  }
-
-  remove(id: number) {
-    const user = this.findOne(id);
-
-    if (!user) {
-      throw new NotFoundException(`User with id ${id} not found`);
-    }
-
-    const index = this.users.indexOf(user);
-
-    this.users.splice(index, 1);
+  async remove(id: number): Promise<User> {
+    return this.prisma.user.delete({
+      where: { id },
+    });
   }
 }
